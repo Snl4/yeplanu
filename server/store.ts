@@ -174,6 +174,23 @@ export function userByToken(token?: string | null) {
   return read().users.find((user) => user.token === token) ?? null;
 }
 
+function samePhone(left?: string, right?: string) {
+  return Boolean(left && right && left.replace(/\s+/g, "") === right.replace(/\s+/g, ""));
+}
+
+export function loginUser(name: string, phone?: string) {
+  const db = read();
+  const needle = name.trim().toLowerCase();
+  const matches = db.users.filter((user) => user.name.trim().toLowerCase() === needle);
+  if (!matches.length) return null;
+  return matches.find((user) => samePhone(user.phone, phone)) ?? matches[0];
+}
+
+export function nameTaken(name: string) {
+  const needle = name.trim().toLowerCase();
+  return read().users.some((user) => user.name.trim().toLowerCase() === needle);
+}
+
 export function verifyUser(token: string, input: { avatar?: string; phone?: string }) {
   const db = read();
   const user = db.users.find((item) => item.token === token);

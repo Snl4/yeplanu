@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5173, // auth login/register API
     host: true,
   },
 });

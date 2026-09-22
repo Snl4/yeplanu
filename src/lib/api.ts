@@ -39,6 +39,7 @@ export const api = {
     age?: number;
     phone?: string;
     district?: string;
+    mode?: "login" | "register";
   }) => request<User>("/api/session", { method: "POST", body: JSON.stringify(body) }),
   verify: (body: { avatar?: string; phone?: string; code?: string }) =>
     request<User>("/api/verify", { method: "POST", body: JSON.stringify(body) }),

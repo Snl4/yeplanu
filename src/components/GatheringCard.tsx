@@ -9,7 +9,7 @@ export function GatheringCard({ gathering }: { gathering: Gathering }) {
   return (
     <Link
       to={`/g/${gathering.id}`}
-      className="block rounded-3xl border border-line bg-card p-4"
+      className="lift-card block rounded-3xl border border-line bg-card p-4"
     >
       <div className="flex items-center gap-3">
         <Avatar src={gathering.host?.avatar} name={gathering.host?.name ?? "Гість"} size={48} />

@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from "react";
-import { Link, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom";
+import { Avatar } from "./components/Avatar";
 import { BottomNav } from "./components/BottomNav";
+import { Brand } from "./components/Brand";
 import { Create } from "./pages/Create";
 import { Detail } from "./pages/Detail";
 import { Feed } from "./pages/Feed";
@@ -12,22 +14,42 @@ import { useApp } from "./store";
 
 function Gate({ children }: { children: ReactNode }) {
   const { ready, user } = useApp();
-  if (!ready) return <p className="px-5 pt-16 text-mute">Завантажуємо…</p>;
+  if (!ready) {
+    return (
+      <div className="boot-screen">
+        <div>
+          <Brand className="text-2xl" />
+          <p className="mt-3 text-mute">Завантажуємо плани…</p>
+        </div>
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
 function Shell() {
+  const user = useApp((state) => state.user);
   return (
     <div className="app-shell">
-      <header className="hidden border-b border-line bg-card/80 px-6 py-4 backdrop-blur md:flex md:items-center md:justify-between">
-        <p className="font-display text-xl">Пішли</p>
-        <nav className="flex gap-5 text-sm font-semibold">
-          <Link to="/">Стрічка</Link>
-          <Link to="/map">Карта</Link>
-          <Link to="/create">Збір</Link>
-          <Link to="/profile">Профіль</Link>
-        </nav>
+      <header className="site-header">
+        <div className="site-header-inner">
+          <Link to="/" className="text-lg">
+            <Brand />
+          </Link>
+          <nav className="site-nav">
+            <NavLink to="/" end>Стрічка</NavLink>
+            <NavLink to="/map">Карта</NavLink>
+            <NavLink to="/create">Збір</NavLink>
+            <NavLink to="/profile">Профіль</NavLink>
+          </nav>
+          {user ? (
+            <Link to="/profile" className="header-user">
+              <Avatar src={user.avatar} name={user.name} size={34} />
+              <span className="text-sm font-semibold">{user.name}</span>
+            </Link>
+          ) : null}
+        </div>
       </header>
       <Outlet />
       <BottomNav />
@@ -46,6 +68,14 @@ export function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route
+        path="/verify"
+        element={
+          <Gate>
+            <Verify />
+          </Gate>
+        }
+      />
+      <Route
         element={
           <Gate>
             <Shell />
@@ -57,7 +87,6 @@ export function App() {
         <Route path="/create" element={<Create />} />
         <Route path="/g/:id" element={<Detail />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/verify" element={<Verify />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

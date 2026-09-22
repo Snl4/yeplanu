@@ -7,6 +7,8 @@ import {
   closeGathering,
   createGathering,
   createUser,
+  loginUser,
+  nameTaken,
   getGathering,
   inviteUser,
   joinGathering,
@@ -57,6 +59,14 @@ export function apiPlugin(): Plugin {
           if (method === "POST" && path === "/api/session") {
             const body = JSON.parse((await readBody(req)) || "{}");
             if (!body.name?.trim()) return json(res, 400, { error: "Потрібне ім’я" });
+            if (body.mode === "login") {
+              const user = loginUser(body.name, body.phone);
+              if (!user) return json(res, 404, { error: "Немає такого профілю. Зареєструйся." });
+              return json(res, 200, user);
+            }
+            if (nameTaken(body.name)) {
+              return json(res, 409, { error: "Таке ім’я вже є. Увійди." });
+            }
             const user = createUser({
               name: body.name,
               avatar: body.avatar || "",

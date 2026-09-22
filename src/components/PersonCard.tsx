@@ -9,7 +9,7 @@ type Props = {
 
 export function PersonCard({ person, onInvite, onInterest }: Props) {
   return (
-    <article className="rounded-3xl border border-line bg-card p-4">
+    <article className="lift-card rounded-3xl border border-line bg-card p-4">
       <div className="flex gap-3">
         <Avatar src={person.avatar} name={person.name} size={56} />
         <div className="min-w-0 flex-1">

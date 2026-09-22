@@ -29,8 +29,8 @@ export function MapPage() {
   }, [selected]);
 
   return (
-    <div className="relative h-[100dvh] md:h-auto md:min-h-dvh">
-      <div className="absolute inset-0 md:static md:h-[100dvh] md:flex">
+    <div className="relative h-[100dvh] md:h-auto md:min-h-[calc(100dvh-76px)]">
+      <div className="absolute inset-0 md:static md:h-[calc(100dvh-76px)] md:flex">
         <div className="h-full md:flex-1">
           <MapView
             center={center}
@@ -69,7 +69,7 @@ export function MapPage() {
               ))}
             </div>
           </div>
-          <div className="mt-3 hidden max-h-[calc(100dvh-160px)] space-y-2 overflow-auto md:block">
+          <div className="mt-3 hidden max-h-[calc(100dvh-220px)] space-y-2 overflow-auto md:block">
             {visible.length ? (
               visible.map((item) => <GatheringCard key={item.id} gathering={item} />)
             ) : (

@@ -45,10 +45,17 @@ export function Feed() {
   }
 
   return (
-    <main className="mx-auto max-w-lg px-4 pb-8 pt-10 md:max-w-2xl">
+    <main className="page-wrap">
       <p className="text-xs font-bold uppercase tracking-[0.16em] text-clay">Київ і область</p>
-      <h1 className="mt-2 font-display text-3xl leading-tight">Хто сьогодні хоче потусити?</h1>
-      <div className="mt-4 flex gap-2">
+      <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <h1 className="max-w-xl font-display text-3xl leading-tight md:text-5xl">
+          Хто сьогодні хоче потусити?
+        </h1>
+        <p className="max-w-sm text-sm text-mute md:text-right">
+          Люди поруч і відкриті збори. Локація світиться лише в тих, хто вже шукає компанію.
+        </p>
+      </div>
+      <div className="mt-6 flex flex-wrap gap-2">
         {[
           ["today", "Сьогодні"],
           ["now", "Зараз"],
@@ -57,7 +64,7 @@ export function Feed() {
           <button
             key={id}
             onClick={() => setTab(id as typeof tab)}
-            className={`rounded-full px-3 py-1.5 text-sm ${tab === id ? "bg-ink text-white" : "border border-line bg-card"}`}
+            className={`rounded-full px-3 py-1.5 text-sm transition ${tab === id ? "bg-ink text-white" : "border border-line bg-card hover:-translate-y-0.5"}`}
           >
             {label}
           </button>
@@ -68,7 +75,7 @@ export function Feed() {
           <button
             key={item}
             onClick={() => setRadius(item)}
-            className={`rounded-full px-3 py-1.5 text-sm ${radius === item ? "bg-clay text-white" : "border border-line bg-card"}`}
+            className={`rounded-full px-3 py-1.5 text-sm transition ${radius === item ? "bg-clay text-white" : "border border-line bg-card hover:-translate-y-0.5"}`}
           >
             {item} км
           </button>
@@ -93,28 +100,33 @@ export function Feed() {
       </div>
 
       {tab !== "groups" ? (
-        <section className="mt-6 space-y-3">
+        <section className="mt-8">
+          <h2 className="font-display text-xl">Люди поруч</h2>
           {filteredPeople.length ? (
-            filteredPeople.map((person) => (
-              <PersonCard
-                key={person.id}
-                person={person}
-                onInvite={() => void invite(person.id)}
-                onInterest={() => void interestIn(person.id)}
-              />
-            ))
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {filteredPeople.map((person) => (
+                <PersonCard
+                  key={person.id}
+                  person={person}
+                  onInvite={() => void invite(person.id)}
+                  onInterest={() => void interestIn(person.id)}
+                />
+              ))}
+            </div>
           ) : (
-            <p className="text-sm text-mute">Поруч поки тихо. Створи збір або увімкни «вільний сьогодні».</p>
+            <p className="mt-3 text-sm text-mute">Поруч поки тихо. Створи збір або увімкни «вільний сьогодні».</p>
           )}
         </section>
       ) : null}
 
-      <section className="mt-6 space-y-3">
+      <section className="mt-8">
         <h2 className="font-display text-xl">{tab === "groups" ? "Групові зустрічі" : "Або приєднайся до збору"}</h2>
         {filteredGatherings.length ? (
-          filteredGatherings.map((item) => <GatheringCard key={item.id} gathering={item} />)
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {filteredGatherings.map((item) => <GatheringCard key={item.id} gathering={item} />)}
+          </div>
         ) : (
-          <p className="text-sm text-mute">Немає відкритих зборів у цьому радіусі.</p>
+          <p className="mt-3 text-sm text-mute">Немає відкритих зборів у цьому радіусі.</p>
         )}
       </section>
     </main>

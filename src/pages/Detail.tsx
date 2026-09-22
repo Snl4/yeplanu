@@ -58,15 +58,15 @@ export function Detail() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl pb-8 md:grid md:grid-cols-2">
-      <section className="h-72 md:h-[100dvh]">
+    <main className="mx-auto max-w-6xl pb-8 md:grid md:grid-cols-2">
+      <section className="h-80 md:h-[calc(100dvh-76px)]">
         <MapView
           center={{ lat: gathering.lat, lng: gathering.lng }}
           gatherings={[gathering]}
           selected={gathering}
         />
       </section>
-      <section className="px-5 py-6">
+      <section className="px-5 py-6 md:px-8 md:py-10">
         <Link to="/" className="text-sm text-clay">
           Назад до стрічки
         </Link>

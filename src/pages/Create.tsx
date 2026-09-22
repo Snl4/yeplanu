@@ -82,10 +82,10 @@ export function Create() {
 
   if (user && !user.verified) {
     return (
-      <main className="mx-auto max-w-lg px-5 pt-16">
-        <h1 className="font-display text-3xl">Спочатку перевірка</h1>
-        <p className="mt-3 text-mute">Без неї збір не публікується і локація не світиться.</p>
-        <button onClick={() => navigate("/verify")} className="mt-8 w-full rounded-2xl bg-clay py-4 text-white">
+      <main className="page-wrap max-w-xl">
+        <h1 className="font-display text-3xl md:text-5xl">Спочатку перевірка</h1>
+        <p className="mt-3 max-w-md text-mute">Без неї збір не публікується і локація не світиться.</p>
+        <button onClick={() => navigate("/verify")} className="mt-8 w-full rounded-2xl bg-clay py-4 text-white md:max-w-sm">
           Перейти до перевірки
         </button>
       </main>
@@ -93,8 +93,8 @@ export function Create() {
   }
 
   return (
-    <main className="mx-auto grid min-h-dvh max-w-5xl md:grid-cols-2">
-      <section className="h-64 md:h-auto">
+    <main className="mx-auto grid min-h-[calc(100dvh-76px)] max-w-6xl md:grid-cols-[1.05fr_0.95fr]">
+      <section className="h-72 overflow-hidden md:h-auto md:min-h-[calc(100dvh-76px)] md:rounded-none">
         <MapView
           center={point ?? KYIV}
           gatherings={[]}
@@ -102,7 +102,7 @@ export function Create() {
           onPick={pick}
         />
       </section>
-      <form className="flex flex-col gap-4 px-5 py-6" onSubmit={onSubmit}>
+      <form className="flex flex-col gap-4 px-5 py-6 md:px-8 md:py-10" onSubmit={onSubmit}>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Новий збір · Київ і область</p>
           <h1 className="mt-2 font-display text-3xl">Збір на вечір</h1>
@@ -133,7 +133,7 @@ export function Create() {
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Пішли в Панаму"
+          placeholder="Зустріч у Панамі"
           className="rounded-2xl border border-line bg-card px-4 py-3"
         />
         <textarea
