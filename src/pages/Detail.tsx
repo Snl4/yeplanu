@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { MapView } from "../components/MapView";
 import { Avatar } from "../components/Avatar";
+import { JoinActions } from "../components/JoinActions";
+import { MapView } from "../components/MapView";
 import { api } from "../lib/api";
-import { whenLabel } from "../lib/geo";
+import { untilLabel, whenLabel } from "../lib/geo";
 import { useApp } from "../store";
 import { interestMeta, type Gathering } from "../types";
 
@@ -12,17 +13,34 @@ export function Detail() {
   const navigate = useNavigate();
   const { user, refresh } = useApp();
   const [gathering, setGathering] = useState<Gathering | null>(null);
+  const [missing, setMissing] = useState("");
   const [text, setText] = useState("");
   const [error, setError] = useState("");
 
   async function load() {
     if (!id) return;
-    setGathering(await api.gathering(id));
+    try {
+      setGathering(await api.gathering(id));
+      setMissing("");
+    } catch (err) {
+      setGathering(null);
+      setMissing(err instanceof Error ? err.message : "Збір уже зібрався або скінчився");
+    }
   }
 
   useEffect(() => {
     void load();
   }, [id]);
+
+  if (missing) {
+    return (
+      <main className="page-wrap max-w-xl">
+        <h1 className="font-display text-3xl">Вже пізно</h1>
+        <p className="mt-3 text-mute">{missing}</p>
+        <Link to="/" className="mt-8 inline-block rounded-2xl bg-ink px-5 py-3 text-white">На стрічку</Link>
+      </main>
+    );
+  }
 
   if (!gathering) {
     return <p className="px-5 pt-16 text-mute">Завантажуємо збір…</p>;
@@ -39,7 +57,7 @@ export function Detail() {
       setGathering(await api.join(id));
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не вдалося приєднатись");
+      setError(err instanceof Error ? err.message : "Не вдалося вирушити");
     }
   }
 
@@ -64,7 +82,7 @@ export function Detail() {
           center={{ lat: gathering.lat, lng: gathering.lng }}
           gatherings={[gathering]}
           selectedId={gathering.id}
-          fly={false}
+          fly
         />
       </section>
       <section className="px-5 py-6 md:px-8 md:py-10">
@@ -72,12 +90,11 @@ export function Detail() {
           Назад до стрічки
         </Link>
         <div className="mt-5 flex items-center gap-3">
-          <Avatar src={gathering.host?.avatar} name={gathering.host?.name ?? ""} size={64} />
+          <Avatar src={gathering.host?.avatar} name={gathering.host?.name ?? ""} size={64} rating={gathering.host?.rating} />
           <div>
             <p className="text-xs text-mute">
               {gathering.host?.name}
               {gathering.host?.age ? `, ${gathering.host.age}` : ""}
-              {gathering.host?.rating ? ` · ★ ${gathering.host.rating}` : ""}
             </p>
             <h1 className="font-display text-2xl">
               {interestMeta(gathering.activity).emoji} {gathering.title}
@@ -89,16 +106,16 @@ export function Detail() {
         </div>
         {gathering.note ? <p className="mt-4 text-mute">{gathering.note}</p> : null}
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <Fact label="Місце" value="публічне" />
-          <Fact label="Локація" value={gathering.placeLabel.split(",")[0]} />
+          <Fact label="Куди" value={gathering.placeLabel} />
+          <Fact label="Активне до" value={untilLabel(gathering.expiresAt)} />
           <Fact label="Нас уже" value={`${taken}/${gathering.spots}`} />
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {gathering.participants.map((person) => (
-            <span key={person.id} className="inline-flex items-center gap-2 rounded-full bg-card px-2 py-1 text-xs">
-              <Avatar src={person.avatar} name={person.name} size={22} />
+            <Link key={person.id} to={`/u/${person.id}`} className="inline-flex items-center gap-2 rounded-full bg-card px-2 py-1 text-xs">
+              <Avatar src={person.avatar} name={person.name} size={22} rating={person.rating} />
               {person.name}
-            </span>
+            </Link>
           ))}
         </div>
         {error ? <p className="mt-3 text-sm text-clay">{error}</p> : null}
@@ -107,9 +124,14 @@ export function Detail() {
             Я вдома · зняти з карти
           </button>
         ) : (
-          <button onClick={() => void join()} disabled={joined || left === 0} className="mt-5 w-full rounded-2xl bg-clay py-4 font-semibold text-white disabled:opacity-50">
-            {joined ? "Ти вже з ними" : "Приєднатися"}
-          </button>
+          <div className="mt-5">
+            <JoinActions
+              profileId={gathering.hostId}
+              onGo={() => void join()}
+              going={joined}
+              disabled={left === 0}
+            />
+          </div>
         )}
         {joined ? (
           <div className="mt-5 rounded-3xl border border-line bg-card p-4">
@@ -117,7 +139,7 @@ export function Detail() {
             <div className="mt-2 space-y-2">
               {gathering.participants.filter((person) => person.id !== user?.id).map((person) => (
                 <div key={person.id} className="flex items-center justify-between gap-2">
-                  <span>{person.name}</span>
+                  <Link to={`/u/${person.id}`}>{person.name}</Link>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((score) => (
                       <button
@@ -159,7 +181,7 @@ export function Detail() {
               <button className="rounded-2xl bg-ink px-4 text-white">OK</button>
             </form>
           ) : (
-            <p className="mt-3 text-xs text-mute">Чат відкриється після «Я з вами».</p>
+            <p className="mt-3 text-xs text-mute">Чат збору відкриється після «Вирушаю». Або напиши в профіль.</p>
           )}
         </div>
       </section>

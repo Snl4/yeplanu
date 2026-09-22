@@ -1,26 +1,40 @@
-import { interestMeta, type Person } from "../types";
+import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
+import { interestMeta, type Gathering, type Person } from "../types";
 import { Avatar } from "./Avatar";
+import { JoinActions } from "./JoinActions";
 
 type Props = {
   person: Person;
-  onInvite?: () => void;
-  onInterest?: () => void;
+  gatherings?: Gathering[];
 };
 
-export function PersonCard({ person, onInvite, onInterest }: Props) {
+export function PersonCard({ person, gatherings = [] }: Props) {
+  const navigate = useNavigate();
+  const hosted = gatherings.find((item) => item.hostId === person.id);
+
+  async function go() {
+    if (hosted) {
+      try {
+        await api.join(hosted.id);
+        navigate(`/g/${hosted.id}`);
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : "Не вдалося вирушити");
+      }
+      return;
+    }
+    await api.invite(person.id);
+    navigate(`/u/${person.id}`);
+  }
+
   return (
     <article className="lift-card rounded-3xl border border-line bg-card p-4">
       <div className="flex gap-3">
-        <Avatar src={person.avatar} name={person.name} size={56} />
+        <Avatar src={person.avatar} name={person.name} size={56} rating={person.rating} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-display text-lg">
-              {person.name}{person.age ? `, ${person.age}` : ""}
-            </h3>
-            <span className="text-xs text-mute">
-              {person.rating ? `★ ${person.rating}` : "новий"}
-            </span>
-          </div>
+          <h3 className="font-display text-lg">
+            {person.name}{person.age ? `, ${person.age}` : ""}
+          </h3>
           <p className="text-sm text-mute">
             📍 {person.city || "Київ"}{person.district ? `, ${person.district}` : ""}
             {person.km !== undefined ? ` · ${person.km} км` : ""}
@@ -38,21 +52,8 @@ export function PersonCard({ person, onInvite, onInterest }: Props) {
           ? `Вільний сьогодні після ${person.freeAfter}`
           : "Готовий зустрітись зараз"}
       </p>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <button
-          onClick={onInvite}
-          disabled={person.invited}
-          className="rounded-2xl bg-ink py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          {person.invited ? "Запрошення надіслано" : "Запросити"}
-        </button>
-        <button
-          onClick={onInterest}
-          disabled={person.interested}
-          className="rounded-2xl border border-line py-2.5 text-sm font-semibold disabled:opacity-50"
-        >
-          {person.interested ? "Вже цікаво" : "Цікаво"}
-        </button>
+      <div className="mt-4">
+        <JoinActions profileId={person.id} onGo={() => void go()} going={person.invited} />
       </div>
     </article>
   );

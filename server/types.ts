@@ -36,6 +36,7 @@ export type Gathering = {
   lng: number;
   placeLabel: string;
   when: string;
+  expiresAt: string;
   spots: number;
   participantIds: string[];
   messages: Message[];
@@ -56,8 +57,26 @@ export type InterestMark = {
 export type Rating = {
   fromId: string;
   toId: string;
-  gatheringId: string;
+  gatheringId?: string;
   score: number;
+  text?: string;
+  at?: string;
+};
+
+export type Complaint = {
+  id: string;
+  fromId: string;
+  toId: string;
+  reason: string;
+  at: string;
+};
+
+export type DirectMessage = {
+  id: string;
+  fromId: string;
+  toId: string;
+  text: string;
+  at: string;
 };
 
 export type Database = {
@@ -66,5 +85,7 @@ export type Database = {
   invites: Invite[];
   interests: InterestMark[];
   ratings: Rating[];
+  complaints: Complaint[];
+  dms: DirectMessage[];
   seeded?: boolean;
 };

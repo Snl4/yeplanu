@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { GatheringCard } from "../components/GatheringCard";
 import { MapView } from "../components/MapView";
 import { PersonOffer } from "../components/PersonOffer";
-import { api } from "../lib/api";
 import { inRegion, isSoon, kmDistance, KYIV } from "../lib/geo";
 import { useApp } from "../store";
 
@@ -54,28 +53,13 @@ export function MapPage() {
     return KYIV;
   }, [selectedPerson, selectedGathering]);
 
-  async function invite(id: string) {
-    await api.invite(id);
-    await refresh();
-  }
-
-  async function interestIn(id: string) {
-    await api.interest(id);
-    await refresh();
-  }
-
   const offer = selectedPerson ? (
-    <PersonOffer
-      person={selectedPerson}
-      gatherings={personGatherings}
-      onInvite={() => void invite(selectedPerson.id)}
-      onInterest={() => void interestIn(selectedPerson.id)}
-    />
+    <PersonOffer person={selectedPerson} gatherings={personGatherings} />
   ) : selectedGathering ? (
     <GatheringCard gathering={selectedGathering} />
   ) : (
     <p className="rounded-2xl border border-line bg-card px-4 py-3 text-sm text-mute">
-      Натисни людину на карті — покаже що і куди, і підлетить до зони.
+      Натисни людину на карті — точна точка і що там по планах.
     </p>
   );
 

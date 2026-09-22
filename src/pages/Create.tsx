@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapView } from "../components/MapView";
 import { api } from "../lib/api";
-import { fuzz, getPosition, inRegion, KYIV } from "../lib/geo";
+import { getPosition, inRegion, KYIV, toLocalInput } from "../lib/geo";
 import { useApp } from "../store";
 import { InterestPicker } from "../components/InterestPicker";
 import { interestMeta } from "../types";
@@ -16,6 +16,7 @@ export function Create() {
   const [note, setNote] = useState("");
   const [spots, setSpots] = useState(5);
   const [when, setWhen] = useState("");
+  const [until, setUntil] = useState(toLocalInput(new Date(Date.now() + 3 * 3600_000)));
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [place, setPlace] = useState("");
   const [error, setError] = useState("");
@@ -31,9 +32,8 @@ export function Create() {
         setError("Поки працюємо лише в Києві та області. Постав точку на карті.");
         return;
       }
-      const next = fuzz(lat, lng);
-      setPoint(next);
-      const geo = await api.geocode(next.lat, next.lng);
+      setPoint({ lat, lng });
+      const geo = await api.geocode(lat, lng);
       setPlace(geo.label);
     } catch {
       setError("Немає доступу до гео. Натисни на карті місце зустрічі.");
@@ -45,10 +45,9 @@ export function Create() {
       setError("Це вже за межами Києва і області.");
       return;
     }
-    const next = fuzz(lat, lng, 180);
-    setPoint(next);
+    setPoint({ lat, lng });
     setError("");
-    const geo = await api.geocode(next.lat, next.lng);
+    const geo = await api.geocode(lat, lng);
     setPlace(geo.label);
   }
 
@@ -70,6 +69,7 @@ export function Create() {
         lng: point.lng,
         placeLabel: place,
         when: mode === "plan" && when ? new Date(when).toISOString() : new Date().toISOString(),
+        expiresAt: until ? new Date(until).toISOString() : new Date(Date.now() + 3 * 3600_000).toISOString(),
         spots,
       });
       await refresh();
@@ -139,13 +139,26 @@ export function Create() {
           className="min-h-24 rounded-2xl border border-line bg-card px-4 py-3"
         />
         {mode === "plan" ? (
-          <input
-            type="datetime-local"
-            value={when}
-            onChange={(event) => setWhen(event.target.value)}
-            className="rounded-2xl border border-line bg-card px-4 py-3"
-          />
+          <label className="grid gap-2 text-xs font-bold uppercase text-mute">
+            Початок
+            <input
+              type="datetime-local"
+              value={when}
+              onChange={(event) => setWhen(event.target.value)}
+              className="rounded-2xl border border-line bg-card px-4 py-3 text-base font-medium normal-case tracking-normal text-ink"
+            />
+          </label>
         ) : null}
+        <label className="grid gap-2 text-xs font-bold uppercase text-mute">
+          Оголошення активне до
+          <input
+            required
+            type="datetime-local"
+            value={until}
+            onChange={(event) => setUntil(event.target.value)}
+            className="rounded-2xl border border-line bg-card px-4 py-3 text-base font-medium normal-case tracking-normal text-ink"
+          />
+        </label>
         <label className="flex items-center justify-between rounded-2xl border border-line bg-card px-4 py-3">
           <span className="text-sm text-mute">Максимум людей</span>
           <input
@@ -164,8 +177,8 @@ export function Create() {
           <p className="font-semibold">{place || "Місце ще не стоїть"}</p>
           <p className="text-mute">
             {point
-              ? "На карті буде розмита зона, не під’їзд. Можна тицьнути іншу точку."
-              : "Натисни «взяти гео» або ткни карту."}
+              ? "Це точна точка зустрічі. Можна тицьнути інше місце."
+              : "Натисни «взяти гео» або ткни карту — точка буде точною."}
           </p>
         </div>
         {error ? <p className="text-sm text-clay">{error}</p> : null}

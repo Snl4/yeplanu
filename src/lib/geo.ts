@@ -25,14 +25,21 @@ export function inRegion(lat: number, lng: number) {
   );
 }
 
-export function fuzz(lat: number, lng: number, meters = 320) {
-  const offset = meters / 111320;
-  const angle = Math.random() * Math.PI * 2;
-  const radius = Math.random() * offset;
-  return {
-    lat: lat + radius * Math.cos(angle),
-    lng: lng + (radius * Math.sin(angle)) / Math.cos((lat * Math.PI) / 180),
-  };
+export function untilLabel(iso?: string) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("uk-UA", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function toLocalInput(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export function getPosition(): Promise<GeolocationPosition> {

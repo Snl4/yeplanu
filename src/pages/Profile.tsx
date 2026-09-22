@@ -50,7 +50,7 @@ export function Profile() {
     <main className="page-wrap grid gap-6 md:grid-cols-[340px_minmax(0,1fr)] md:items-start">
       <aside className="space-y-4">
         <div className="rounded-3xl border border-line bg-card p-5">
-          <Avatar src={user.avatar} name={user.name} size={84} />
+          <Avatar src={user.avatar} name={user.name} size={84} rating={user.rating} />
           <p className="mt-4 text-xs text-mute">
             {user.verified ? "перевірений" : "без перевірки"}
             {user.phoneVerified ? " · телефон" : ""}

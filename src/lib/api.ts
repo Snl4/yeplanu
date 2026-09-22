@@ -1,4 +1,4 @@
-import type { Gathering, Invite, Person, User } from "../types";
+import type { DirectMessage, Gathering, Invite, Person, ProfileView, User } from "../types";
 
 const TOKEN_KEY = "pishly-token";
 
@@ -52,8 +52,16 @@ export const api = {
   answerInvite: (id: string, status: "accepted" | "declined") =>
     request<Invite>(`/api/invites/${id}`, { method: "POST", body: JSON.stringify({ status }) }),
   interest: (toId: string) => request<{ ok: boolean }>("/api/interest", { method: "POST", body: JSON.stringify({ toId }) }),
-  rate: (toId: string, gatheringId: string, score: number) =>
-    request("/api/rate", { method: "POST", body: JSON.stringify({ toId, gatheringId, score }) }),
+  rate: (toId: string, gatheringId: string, score: number, text = "") =>
+    request("/api/rate", { method: "POST", body: JSON.stringify({ toId, gatheringId, score, text }) }),
+  profile: (id: string) => request<ProfileView>(`/api/users/${id}`),
+  review: (toId: string, score: number, text: string) =>
+    request<ProfileView>("/api/rate", { method: "POST", body: JSON.stringify({ toId, score, text }) }),
+  report: (toId: string, reason: string) =>
+    request<{ ok: boolean }>(`/api/users/${toId}/report`, { method: "POST", body: JSON.stringify({ reason }) }),
+  dms: (userId: string) => request<DirectMessage[]>(`/api/dm/${userId}`),
+  dm: (toId: string, text: string) =>
+    request<DirectMessage[]>("/api/dm", { method: "POST", body: JSON.stringify({ toId, text }) }),
   gatherings: () => request<Gathering[]>("/api/gatherings"),
   gathering: (id: string) => request<Gathering>(`/api/gatherings/${id}`),
   create: (body: Partial<Gathering> & { lat: number; lng: number; title: string }) =>

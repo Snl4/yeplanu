@@ -2,15 +2,14 @@ type Props = {
   src?: string;
   name: string;
   size?: number;
+  rating?: number;
 };
 
-export function Avatar({ src, name, size = 44 }: Props) {
+export function Avatar({ src, name, size = 44, rating }: Props) {
   return (
-    <img
-      src={src || ""}
-      alt={name}
-      className="rounded-2xl object-cover bg-clay-soft"
-      style={{ width: size, height: size }}
-    />
+    <span className="avatar-wrap" style={{ width: size, height: size }}>
+      <img src={src || ""} alt={name} className="avatar-img" />
+      {rating && size >= 40 ? <span className="avatar-rating">★ {rating}</span> : null}
+    </span>
   );
 }

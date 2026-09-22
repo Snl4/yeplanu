@@ -9,6 +9,7 @@ import { Feed } from "./pages/Feed";
 import { Login } from "./pages/Login";
 import { MapPage } from "./pages/MapPage";
 import { Profile } from "./pages/Profile";
+import { UserPage } from "./pages/UserPage";
 import { Verify } from "./pages/Verify";
 import { useApp } from "./store";
 
@@ -87,6 +88,7 @@ export function App() {
         <Route path="/create" element={<Create />} />
         <Route path="/g/:id" element={<Detail />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/u/:id" element={<UserPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

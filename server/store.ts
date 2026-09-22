@@ -3,13 +3,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { kmDistance } from "../src/lib/geo";
 import { makeAvatar } from "../src/lib/avatar";
-import type { Database, Gathering, Invite, User } from "./types";
+import type { Complaint, Database, DirectMessage, Gathering, Invite, User } from "./types";
 
 const dataDir = path.resolve(process.cwd(), "data");
 const dbPath = path.join(dataDir, "db.json");
 
 function empty(): Database {
-  return { users: [], gatherings: [], invites: [], interests: [], ratings: [] };
+  return { users: [], gatherings: [], invites: [], interests: [], ratings: [], complaints: [], dms: [] };
 }
 
 function normalizeUser(user: User): User {
@@ -102,15 +102,31 @@ function seed(db: Database): Database {
       lng: 30.4981,
       placeLabel: "Оболонь, Київ",
       when: new Date(new Date().setHours(20, 0, 0, 0)).toISOString(),
+      expiresAt: new Date(new Date().setHours(23, 30, 0, 0)).toISOString(),
       spots: 5,
       participantIds: [vlad.id],
       messages: [],
     });
   }
+  const maria = db.users.find((user) => user.name === "Марія");
+  if (vlad && maria && !db.ratings.some((item) => item.toId === vlad.id)) {
+    db.ratings.push({
+      fromId: maria.id,
+      toId: vlad.id,
+      gatheringId: db.gatherings[0]?.id,
+      score: 5,
+      text: "Прийшов вчасно, без фейку. Можна кликати ще.",
+      at: new Date().toISOString(),
+    });
+    vlad.rating = 5;
+    vlad.ratingsCount = 1;
+  }
   db.seeded = true;
   if (!db.invites) db.invites = [];
   if (!db.interests) db.interests = [];
   if (!db.ratings) db.ratings = [];
+  if (!db.complaints) db.complaints = [];
+  if (!db.dms) db.dms = [];
   return db;
 }
 
@@ -120,10 +136,17 @@ function read(): Database {
   raw.gatherings = (raw.gatherings ?? []).map((item) => ({
     ...item,
     spots: Math.max(item.spots || 5, item.participantIds?.length || 1, 2),
+    expiresAt: item.expiresAt || defaultExpires(item.when),
   }));
   raw.invites = raw.invites ?? [];
   raw.interests = raw.interests ?? [];
-  raw.ratings = raw.ratings ?? [];
+  raw.ratings = (raw.ratings ?? []).map((item) => ({
+    ...item,
+    text: item.text ?? "",
+    at: item.at ?? new Date().toISOString(),
+  }));
+  raw.complaints = raw.complaints ?? [];
+  raw.dms = raw.dms ?? [];
   if (!raw.seeded) {
     const next = seed(raw);
     write(next);
@@ -236,13 +259,35 @@ export function listPeople(viewer: User | null, origin: { lat: number; lng: numb
     .sort((a, b) => (a.km ?? 0) - (b.km ?? 0));
 }
 
-export function listGatherings() {
-  const db = read();
-  return db.gatherings.map((gathering) => hydrateGathering(db, gathering));
+function defaultExpires(when?: string) {
+  const start = when ? Date.parse(when) : Number.NaN;
+  const base = Number.isNaN(start) ? Date.now() : start;
+  return new Date(base + 6 * 3600_000).toISOString();
 }
 
-export function getGathering(id: string) {
-  return listGatherings().find((item) => item.id === id) ?? null;
+function isExpired(gathering: Gathering) {
+  return Boolean(gathering.expiresAt && Date.parse(gathering.expiresAt) <= Date.now());
+}
+
+function visibleTo(gathering: Gathering, viewerId?: string | null) {
+  if (viewerId && gathering.participantIds.includes(viewerId)) return true;
+  if (gathering.participantIds.length >= gathering.spots) return false;
+  if (isExpired(gathering)) return false;
+  return true;
+}
+
+export function listGatherings(viewerId?: string | null) {
+  const db = read();
+  return db.gatherings
+    .filter((gathering) => visibleTo(gathering, viewerId))
+    .map((gathering) => hydrateGathering(db, gathering));
+}
+
+export function getGathering(id: string, viewerId?: string | null) {
+  const db = read();
+  const gathering = db.gatherings.find((item) => item.id === id);
+  if (!gathering || !visibleTo(gathering, viewerId)) return null;
+  return hydrateGathering(db, gathering);
 }
 
 export function createGathering(
@@ -277,13 +322,17 @@ export function joinGathering(token: string, id: string) {
   const db = read();
   const user = db.users.find((item) => item.token === token);
   const gathering = db.gatherings.find((item) => item.id === id);
-  if (!user || !gathering) return null;
-  if (!gathering.participantIds.includes(user.id)) {
-    if (gathering.participantIds.length >= gathering.spots) return getGathering(id);
-    gathering.participantIds.push(user.id);
-    write(db);
+  if (!user || !gathering) return { error: "Немає такого збору" };
+  if (gathering.participantIds.includes(user.id)) {
+    return { gathering: getGathering(id, user.id) };
   }
-  return getGathering(id);
+  if (isExpired(gathering)) return { error: "Оголошення вже неактивне" };
+  if (gathering.participantIds.length >= gathering.spots) {
+    return { error: "Компанія вже зібралась" };
+  }
+  gathering.participantIds.push(user.id);
+  write(db);
+  return { gathering: getGathering(id, user.id) };
 }
 
 export function addMessage(token: string, id: string, text: string) {
@@ -298,7 +347,7 @@ export function addMessage(token: string, id: string, text: string) {
     at: new Date().toISOString(),
   });
   write(db);
-  return getGathering(id);
+  return getGathering(id, user.id);
 }
 
 export function inviteUser(token: string, toId: string) {
@@ -344,22 +393,99 @@ export function listInvites(token: string) {
     .map((item) => ({ ...item, from: publicUser(db.users.find((person) => person.id === item.fromId)) }));
 }
 
-export function rateUser(token: string, toId: string, gatheringId: string, score: number) {
+export function rateUser(token: string, toId: string, score: number, text = "", gatheringId = "") {
   const db = read();
   const from = db.users.find((item) => item.token === token);
   const to = db.users.find((item) => item.id === toId);
-  const gathering = db.gatherings.find((item) => item.id === gatheringId);
-  if (!from || !to || !gathering) return null;
-  if (!gathering.participantIds.includes(from.id) || !gathering.participantIds.includes(to.id)) return null;
-  if (db.ratings.some((item) => item.fromId === from.id && item.toId === to.id && item.gatheringId === gatheringId)) {
-    return publicUser(to);
+  if (!from || !to || from.id === to.id) return null;
+  const existing = db.ratings.find((item) => item.fromId === from.id && item.toId === to.id);
+  if (existing) {
+    existing.score = Math.min(5, Math.max(1, score));
+    existing.text = text.trim();
+    existing.at = new Date().toISOString();
+    if (gatheringId) existing.gatheringId = gatheringId;
+  } else {
+    db.ratings.push({
+      fromId: from.id,
+      toId,
+      gatheringId,
+      score: Math.min(5, Math.max(1, score)),
+      text: text.trim(),
+      at: new Date().toISOString(),
+    });
   }
-  db.ratings.push({ fromId: from.id, toId, gatheringId, score });
   const scores = db.ratings.filter((item) => item.toId === to.id).map((item) => item.score);
   to.ratingsCount = scores.length;
   to.rating = Math.round((scores.reduce((sum, value) => sum + value, 0) / scores.length) * 10) / 10;
   write(db);
-  return publicUser(to);
+  return publicProfile(to.id);
+}
+
+export function publicProfile(id: string) {
+  const db = read();
+  const user = db.users.find((item) => item.id === id);
+  if (!user) return null;
+  return {
+    ...publicUser(user),
+    reviews: db.ratings
+      .filter((item) => item.toId === id)
+      .map((item) => ({
+        ...item,
+        from: publicUser(db.users.find((person) => person.id === item.fromId)),
+      })),
+  };
+}
+
+export function reportUser(token: string, toId: string, reason: string) {
+  const db = read();
+  const from = db.users.find((item) => item.token === token);
+  if (!from) return { error: "Увійди ще раз" };
+  if (from.id === toId) return { error: "Себе скаржити немає сенсу" };
+  if (!reason.trim()) return { error: "Напиши, що сталось" };
+  const complaint: Complaint = {
+    id: randomUUID(),
+    fromId: from.id,
+    toId,
+    reason: reason.trim(),
+    at: new Date().toISOString(),
+  };
+  db.complaints.push(complaint);
+  write(db);
+  return { ok: true };
+}
+
+export function listDms(token: string, otherId: string) {
+  const db = read();
+  const me = db.users.find((item) => item.token === token);
+  if (!me) return [];
+  return db.dms
+    .filter((item) =>
+      (item.fromId === me.id && item.toId === otherId) ||
+      (item.fromId === otherId && item.toId === me.id),
+    )
+    .map((item) => ({
+      ...item,
+      from: publicUser(db.users.find((user) => user.id === item.fromId)),
+    }));
+}
+
+export function sendDm(token: string, toId: string, text: string) {
+  const db = read();
+  const from = db.users.find((item) => item.token === token);
+  const to = db.users.find((item) => item.id === toId);
+  if (!from || !to) return { error: "Немає такого профілю" };
+  if (from.id === to.id) return { error: "Це ти сам" };
+  if (!text.trim()) return { error: "Порожньо" };
+  const message: DirectMessage = {
+    id: randomUUID(),
+    fromId: from.id,
+    toId,
+    text: text.trim(),
+    at: new Date().toISOString(),
+  };
+  db.dms.push(message);
+  write(db);
+  return listDms(token, toId);
 }
 
 function hydrateGathering(db: Database, gathering: Gathering) {

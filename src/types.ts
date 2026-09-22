@@ -46,11 +46,36 @@ export type Gathering = {
   lng: number;
   placeLabel: string;
   when: string;
+  expiresAt: string;
   spots: number;
   participantIds: string[];
   host: PublicUser | null;
   participants: PublicUser[];
   messages: Message[];
+};
+
+export type Review = {
+  id?: string;
+  fromId: string;
+  toId: string;
+  gatheringId?: string;
+  score: number;
+  text: string;
+  at: string;
+  from: PublicUser | null;
+};
+
+export type ProfileView = PublicUser & {
+  reviews: Review[];
+};
+
+export type DirectMessage = {
+  id: string;
+  fromId: string;
+  toId: string;
+  text: string;
+  at: string;
+  from: PublicUser | null;
 };
 
 export type Invite = {
@@ -90,4 +115,12 @@ export function interestMeta(id: string) {
     return { id, label: id.slice(7) || "Свій варіант", emoji: "✨" };
   }
   return { id, label: id, emoji: "✨" };
+}
+
+export function gatheringOpen(gathering: Pick<Gathering, "spots" | "participantIds" | "expiresAt">, userId?: string) {
+  const member = Boolean(userId && gathering.participantIds.includes(userId));
+  if (member) return true;
+  if (gathering.participantIds.length >= gathering.spots) return false;
+  if (gathering.expiresAt && Date.parse(gathering.expiresAt) <= Date.now()) return false;
+  return true;
 }

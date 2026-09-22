@@ -12,11 +12,15 @@ import {
   getGathering,
   inviteUser,
   joinGathering,
+  listDms,
   listGatherings,
   listInvites,
   listPeople,
   markInterest,
+  publicProfile,
   rateUser,
+  reportUser,
+  sendDm,
   setStatus,
   userByToken,
   verifyUser,
@@ -137,12 +141,12 @@ export function apiPlugin(): Plugin {
           if (method === "POST" && path === "/api/rate") {
             if (!me) return json(res, 401, { error: "Увійди ще раз" });
             const body = JSON.parse((await readBody(req)) || "{}");
-            const rated = rateUser(token!, body.toId, body.gatheringId, Number(body.score));
-            return rated ? json(res, 200, rated) : json(res, 400, { error: "Оцінити можна після спільного збору" });
+            const rated = rateUser(token!, body.toId, Number(body.score), body.text || "", body.gatheringId || "");
+            return rated ? json(res, 200, rated) : json(res, 400, { error: "Не вдалося залишити відгук" });
           }
 
           if (method === "GET" && path === "/api/gatherings") {
-            return json(res, 200, listGatherings().filter((item) => inRegion(item.lat, item.lng)));
+            return json(res, 200, listGatherings(me?.id).filter((item) => inRegion(item.lat, item.lng)));
           }
 
           if (method === "POST" && path === "/api/gatherings") {
@@ -165,6 +169,7 @@ export function apiPlugin(): Plugin {
               lng: Number(body.lng),
               placeLabel,
               when: body.when || new Date().toISOString(),
+              expiresAt: body.expiresAt || new Date(Date.now() + 6 * 3600_000).toISOString(),
               spots: Math.max(2, Number(body.spots) || 5),
             });
             return json(res, 200, gathering);
@@ -176,9 +181,9 @@ export function apiPlugin(): Plugin {
             const action = gatheringMatch[2];
 
             if (method === "GET" && !action) {
-              const gathering = getGathering(id);
+              const gathering = getGathering(id, me?.id);
               if (!gathering || !inRegion(gathering.lat, gathering.lng)) {
-                return json(res, 404, { error: "Немає такого збору" });
+                return json(res, 404, { error: "Збір уже зібрався, скінчився або його немає" });
               }
               return json(res, 200, gathering);
             }
@@ -189,8 +194,9 @@ export function apiPlugin(): Plugin {
             }
 
             if (method === "POST" && action === "/join") {
-              const gathering = joinGathering(token ?? "", id);
-              return gathering ? json(res, 200, gathering) : json(res, 404, { error: "Не вдалося приєднатись" });
+              const result = joinGathering(token ?? "", id);
+              if ("error" in result) return json(res, 409, { error: result.error });
+              return json(res, 200, result.gathering);
             }
 
             if (method === "POST" && action === "/messages") {
@@ -198,6 +204,35 @@ export function apiPlugin(): Plugin {
               const gathering = addMessage(token ?? "", id, body.text ?? "");
               return gathering ? json(res, 200, gathering) : json(res, 400, { error: "Не вдалося надіслати" });
             }
+          }
+
+          const userMatch = path.match(/^\/api\/users\/([^/]+)(\/report)?$/);
+          if (userMatch) {
+            const userId = userMatch[1];
+            if (method === "GET" && !userMatch[2]) {
+              const profile = publicProfile(userId);
+              return profile ? json(res, 200, profile) : json(res, 404, { error: "Немає такого профілю" });
+            }
+            if (method === "POST" && userMatch[2] === "/report") {
+              if (!me) return json(res, 401, { error: "Увійди ще раз" });
+              const body = JSON.parse((await readBody(req)) || "{}");
+              const result = reportUser(token!, userId, body.reason || "");
+              if ("error" in result) return json(res, 400, { error: result.error });
+              return json(res, 200, result);
+            }
+          }
+
+          if (method === "GET" && path.startsWith("/api/dm/")) {
+            if (!me) return json(res, 401, { error: "Увійди ще раз" });
+            return json(res, 200, listDms(token!, path.slice("/api/dm/".length)));
+          }
+
+          if (method === "POST" && path === "/api/dm") {
+            if (!me) return json(res, 401, { error: "Увійди ще раз" });
+            const body = JSON.parse((await readBody(req)) || "{}");
+            const result = sendDm(token!, body.toId, body.text || "");
+            if (result && "error" in result) return json(res, 400, { error: result.error });
+            return json(res, 200, result);
           }
 
           if (method === "GET" && path === "/api/geocode") {

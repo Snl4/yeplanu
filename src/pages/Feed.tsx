@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { GatheringCard } from "../components/GatheringCard";
 import { PersonCard } from "../components/PersonCard";
-import { api } from "../lib/api";
 import { isSoon, kmDistance } from "../lib/geo";
 import { useApp } from "../store";
 import { InterestPicker } from "../components/InterestPicker";
@@ -34,16 +33,6 @@ export function Feed() {
       return true;
     });
   }, [gatherings, interest, tab, origin, radius]);
-
-  async function invite(id: string) {
-    await api.invite(id);
-    await refresh();
-  }
-
-  async function interestIn(id: string) {
-    await api.interest(id);
-    await refresh();
-  }
 
   return (
     <main className="page-wrap">
@@ -109,8 +98,7 @@ export function Feed() {
                 <PersonCard
                   key={person.id}
                   person={person}
-                  onInvite={() => void invite(person.id)}
-                  onInterest={() => void interestIn(person.id)}
+                  gatherings={filteredGatherings}
                 />
               ))}
             </div>
