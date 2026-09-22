@@ -5,7 +5,7 @@ import { Brand } from "../components/Brand";
 import { api } from "../lib/api";
 import { makeAvatar } from "../lib/avatar";
 import { useApp } from "../store";
-import { INTERESTS } from "../types";
+import { InterestPicker } from "../components/InterestPicker";
 
 type Mode = "login" | "register";
 
@@ -20,12 +20,6 @@ export function Login() {
   const [interests, setInterests] = useState<string[]>(["talk"]);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-
-  function toggle(item: string) {
-    setInterests((current) =>
-      current.includes(item) ? current.filter((value) => value !== item) : [...current, item],
-    );
-  }
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -107,17 +101,8 @@ export function Login() {
               {mode === "register" ? (
                 <div className="auth-field">
                   <p className="text-xs font-bold uppercase tracking-wide text-mute">Інтереси</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {INTERESTS.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggle(item.id)}
-                        className={`interest-chip ${interests.includes(item.id) ? "is-on" : ""}`}
-                      >
-                        {item.emoji} {item.label}
-                      </button>
-                    ))}
+                  <div className="mt-2">
+                    <InterestPicker value={interests} onChange={setInterests} />
                   </div>
                 </div>
               ) : null}

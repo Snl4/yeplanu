@@ -75,6 +75,19 @@ export const INTERESTS = [
 
 export const RADII = [1, 5, 10, 30] as const;
 
+export function customInterestId(label: string) {
+  return `custom:${label.trim().slice(0, 32)}`;
+}
+
+export function isCustomInterest(id: string) {
+  return id.startsWith("custom:");
+}
+
 export function interestMeta(id: string) {
-  return INTERESTS.find((item) => item.id === id) ?? { id, label: id, emoji: "•" };
+  const known = INTERESTS.find((item) => item.id === id);
+  if (known) return known;
+  if (isCustomInterest(id)) {
+    return { id, label: id.slice(7) || "Свій варіант", emoji: "✨" };
+  }
+  return { id, label: id, emoji: "✨" };
 }

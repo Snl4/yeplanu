@@ -4,7 +4,8 @@ import { MapView } from "../components/MapView";
 import { api } from "../lib/api";
 import { fuzz, getPosition, inRegion, KYIV } from "../lib/geo";
 import { useApp } from "../store";
-import { interestMeta, INTERESTS } from "../types";
+import { InterestPicker } from "../components/InterestPicker";
+import { interestMeta } from "../types";
 
 export function Create() {
   const navigate = useNavigate();
@@ -99,6 +100,7 @@ export function Create() {
           center={point ?? KYIV}
           gatherings={[]}
           draft={point}
+          fly={Boolean(point)}
           onPick={pick}
         />
       </section>
@@ -115,21 +117,15 @@ export function Create() {
             Планую
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {INTERESTS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setActivity(item.id);
-                setTitle(`${item.label} сьогодні`);
-              }}
-              className={`rounded-full px-3 py-2 text-sm ${activity === item.id ? "bg-clay text-white" : "border border-line bg-card"}`}
-            >
-              {item.emoji} {item.label}
-            </button>
-          ))}
-        </div>
+        <InterestPicker
+          value={[activity]}
+          multiple={false}
+          onChange={(next) => {
+            const id = next[0] ?? "beer";
+            setActivity(id);
+            setTitle(`${interestMeta(id).label} сьогодні`);
+          }}
+        />
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}

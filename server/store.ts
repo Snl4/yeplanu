@@ -61,7 +61,7 @@ function seed(db: Database): Database {
       name: "Оля",
       age: 23,
       district: "Лівобережна",
-      interests: ["cinema", "music", "walk"],
+      interests: ["cinema", "music", "walk", "custom:скейт"],
       freeAfter: "20:00",
       lat: 50.4518,
       lng: 30.5984,

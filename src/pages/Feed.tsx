@@ -4,7 +4,8 @@ import { PersonCard } from "../components/PersonCard";
 import { api } from "../lib/api";
 import { isSoon, kmDistance } from "../lib/geo";
 import { useApp } from "../store";
-import { INTERESTS, RADII } from "../types";
+import { InterestPicker } from "../components/InterestPicker";
+import { isCustomInterest, RADII } from "../types";
 
 export function Feed() {
   const { people, gatherings, radius, setRadius, refresh, origin } = useApp();
@@ -81,22 +82,22 @@ export function Feed() {
           </button>
         ))}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           onClick={() => setInterest("")}
           className={`rounded-full px-3 py-1.5 text-sm ${!interest ? "bg-clay-soft text-clay" : "border border-line bg-card"}`}
         >
           Усі
         </button>
-        {INTERESTS.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => setInterest(item.id)}
-            className={`rounded-full px-3 py-1.5 text-sm ${interest === item.id ? "bg-clay-soft text-clay" : "border border-line bg-card"}`}
-          >
-            {item.emoji} {item.label}
-          </button>
-        ))}
+        <InterestPicker
+          value={interest ? [interest] : []}
+          multiple={false}
+          extras={[
+            ...people.flatMap((person) => person.interests),
+            ...gatherings.map((item) => item.activity),
+          ].filter(isCustomInterest)}
+          onChange={(next) => setInterest(next[0] ?? "")}
+        />
       </div>
 
       {tab !== "groups" ? (

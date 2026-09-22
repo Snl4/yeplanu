@@ -63,7 +63,8 @@ export function Detail() {
         <MapView
           center={{ lat: gathering.lat, lng: gathering.lng }}
           gatherings={[gathering]}
-          selected={gathering}
+          selectedId={gathering.id}
+          fly={false}
         />
       </section>
       <section className="px-5 py-6 md:px-8 md:py-10">
