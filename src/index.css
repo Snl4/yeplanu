@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Unbounded", sans-serif;
+  --font-sans: "Manrope", sans-serif;
+  --color-paper: #f4efe7;
+  --color-ink: #1b1713;
+  --color-mute: #6d655c;
+  --color-line: #e4dcd1;
+  --color-card: #fffdf9;
+  --color-clay: #c45c26;
+  --color-clay-soft: #f3d6c4;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  margin: 0;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.leaflet-container {
+  background: #e8e2d8;
+  font-family: var(--font-sans);
+}
+
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: rgba(255, 253, 249, 0.8) !important;
+}
+
+.app-shell {
+  min-height: 100dvh;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 900px) {
+  .app-shell {
+    padding-bottom: 0;
+  }
+}

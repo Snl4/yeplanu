@@ -1,0 +1,10 @@
+---
+description: Push every yeplanu update to GitHub
+alwaysApply: true
+---
+
+# Push after every update
+
+After any feature, fix, or meaningful file change in this repo, create a git commit (when the user asked for work that should be saved) and `git push -u origin HEAD` to `git@github.com:Snl4/yeplanu.git`.
+
+Do not commit `node_modules`, `data/`, `.env`, or secrets. Never force-push to main unless the user explicitly asks.
